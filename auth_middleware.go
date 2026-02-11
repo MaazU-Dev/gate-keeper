@@ -19,7 +19,6 @@ func (cfg *Config) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), "userID", userID)
-		r.Header.Set("X-User-ID", userID)     // for external services to access the user ID
 		next.ServeHTTP(w, r.WithContext(ctx)) // pass the context to the next handler
 	})
 }

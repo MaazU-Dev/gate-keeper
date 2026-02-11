@@ -40,5 +40,8 @@ func (service *Service) proxyHandler(w http.ResponseWriter, r *http.Request, end
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.Director = func(r *http.Request) {
+		r.Header.Set("X-User-ID", r.Context().Value("userID").(string))
+	}
 	proxy.ServeHTTP(w, r)
 }
