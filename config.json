@@ -6,15 +6,18 @@
     "endpoints": [
       {
         "path": "/api/v1/users",
-        "method": "GET"
+        "method": "GET",
+        "auth_strategy": "jwt"
       },
       {
         "path": "/api/v1/users",
-        "method": "POST"
+        "method": "POST",
+        "auth_strategy": "public"
       },
       {
         "path": "/api/v1/users",
-        "method": "PUT"
+        "method": "PUT",
+        "auth_strategy": "public"
       }
     ],
     "secret_key": "1234567890"
@@ -26,15 +29,18 @@
     "endpoints": [
       {
         "path": "/api/v1/users",
-        "method": "GET"
+        "method": "GET",
+        "auth_strategy": "public"
       },
       {
         "path": "/api/v1/users",
-        "method": "POST"
+        "method": "POST",
+        "auth_strategy": "public"
       },
       {
         "path": "/api/v1/users",
-        "method": "PUT"
+        "method": "PUT",
+        "auth_strategy": "public"
       }
     ],
     "secret_key": "0987654321"

@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	Services []Service `json:"services"`
+	Services        []Service `json:"services"`
+	AuthTokenSecret string    `json:"auth_token_secret"`
 }
 
 type Service struct {
@@ -20,9 +21,17 @@ type Service struct {
 	SecretKey string     `json:"secret_key"`
 }
 type Endpoint struct {
-	Path   string `json:"path"`
-	Method string `json:"method"`
+	Path         string       `json:"path"`
+	Method       string       `json:"method"`
+	AuthStrategy AuthStrategy `json:"auth_strategy"`
 }
+
+type AuthStrategy string
+
+const (
+	AuthStrategyJWT    AuthStrategy = "jwt"
+	AuthStrategyPublic AuthStrategy = "public"
+)
 
 func loadServces(path string) ([]Service, error) {
 	f, err := os.Open(path)

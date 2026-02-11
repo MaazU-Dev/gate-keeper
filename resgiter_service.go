@@ -9,15 +9,24 @@ import (
 )
 
 func (cfg *Config) registerService(mux *http.ServeMux) {
-
 	for _, service := range cfg.Services {
 		for _, endpoint := range service.Endpoints {
 
-			fmt.Printf("%s /%s%s \n", endpoint.Method, service.Name, endpoint.Path)
-			mux.HandleFunc(fmt.Sprintf("%s /%s%s", endpoint.Method, service.Name, endpoint.Path), func(w http.ResponseWriter, r *http.Request) {
+			pattern := fmt.Sprintf("%s /%s%s", endpoint.Method, service.Name, endpoint.Path)
+			fmt.Printf("%s %s auth strategy: %s\n", endpoint.Method, pattern, endpoint.AuthStrategy)
+
+			baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 				log.Println("request received", r.Method, r.URL.Path)
 				service.proxyHandler(w, r, endpoint)
 			})
+
+			var finalHandler http.Handler = baseHandler
+			if endpoint.AuthStrategy == AuthStrategyJWT {
+				finalHandler = cfg.AuthMiddleware(finalHandler)
+			}
+
+			mux.Handle(pattern, finalHandler)
 		}
 	}
 }
