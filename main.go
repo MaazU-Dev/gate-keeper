@@ -55,8 +55,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	cfg.registerService(mux)
-
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	port := "8080"
+	s := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
+	if err := s.ListenAndServe(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }
