@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"gate-keeper/internal/auth"
 	"net/http"
 )
@@ -17,7 +18,8 @@ func (cfg *Config) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		r.Header.Set("X-User-ID", userID)
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), "userID", userID)
+		r.Header.Set("X-User-ID", userID)     // for external services to access the user ID
+		next.ServeHTTP(w, r.WithContext(ctx)) // pass the context to the next handler
 	})
 }
