@@ -21,7 +21,7 @@
   },
   {
     "name": "external-service-2",
-    "base_url": "http://localhost2",
+    "base_url": "http://localhost",
     "port": 8082,
     "endpoints": [
       {
