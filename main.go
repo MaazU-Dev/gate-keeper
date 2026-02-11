@@ -2,53 +2,60 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 )
 
 type Config struct {
-	Origin string `json:"origin"`
+	Services []Service `json:"services"`
 }
 
-func loadConfig(path string) (*Config, error) {
+type Service struct {
+	Name      string     `json:"name"`
+	BaseURL   string     `json:"base_url"`
+	Port      int        `json:"port"`
+	Endpoints []Endpoint `json:"endpoints"`
+	SecretKey string     `json:"secret_key"`
+}
+type Endpoint struct {
+	Path   string `json:"path"`
+	Method string `json:"method"`
+}
+
+func loadServces(path string) ([]Service, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	var cfg Config
-	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+	var services []Service
+	if err := json.NewDecoder(f).Decode(&services); err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	if len(services) == 0 {
+		return nil, fmt.Errorf("no services found in config")
+	}
+
+	return services, nil
 }
 
 func main() {
-	cfg, err := loadConfig("config.json")
+	services, err := loadServces("config.json")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	origin, err := url.Parse(cfg.Origin)
-	if err != nil {
-		log.Fatalf("invalid origin URL in config: %v", err)
+	cfg := Config{
+		Services: services,
 	}
 
-	proxy := &httputil.ReverseProxy{
-		Rewrite: func(r *httputil.ProxyRequest) {
-			r.SetURL(origin)
-			r.Out.Header.Set("X-Proxy-Source", "Go-Gateway")
-		},
-	}
+	mux := http.NewServeMux()
+	cfg.registerService(mux)
 
-	http.Handle("/", proxy)
-
-	log.Println("proxy listening on :8080, forwarding to", cfg.Origin)
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

@@ -1,3 +1,42 @@
-{
-  "origin": "http://localhost:8081"
-}
+[
+  {
+    "name": "external-service-1",
+    "base_url": "http://localhost",
+    "port": 8081,
+    "endpoints": [
+      {
+        "path": "/api/v1/users",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/users",
+        "method": "POST"
+      },
+      {
+        "path": "/api/v1/users",
+        "method": "PUT"
+      }
+    ],
+    "secret_key": "1234567890"
+  },
+  {
+    "name": "external-service-2",
+    "base_url": "http://localhost",
+    "port": 8082,
+    "endpoints": [
+      {
+        "path": "/api/v1/users",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/users",
+        "method": "POST"
+      },
+      {
+        "path": "/api/v1/users",
+        "method": "PUT"
+      }
+    ],
+    "secret_key": "0987654321"
+  }
+]
