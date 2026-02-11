@@ -26,6 +26,10 @@
     "name": "external-service-2",
     "base_url": "http://localhost",
     "port": 8082,
+    "ip_filter": {
+    "mode": "blacklist", 
+    "ips": ["192.168.1.1", "203.0.113.50"]
+    },
     "endpoints": [
       {
         "path": "/api/v1/users",

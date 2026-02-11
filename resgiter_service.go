@@ -16,7 +16,6 @@ func (cfg *Config) registerService(mux *http.ServeMux) {
 			fmt.Printf("%s %s auth strategy: %s\n", endpoint.Method, pattern, endpoint.AuthStrategy)
 
 			baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 				log.Println("request received", r.Method, r.URL.Path)
 				service.proxyHandler(w, r, endpoint)
 			})
@@ -25,7 +24,7 @@ func (cfg *Config) registerService(mux *http.ServeMux) {
 			if endpoint.AuthStrategy == AuthStrategyJWT {
 				finalHandler = cfg.AuthMiddleware(finalHandler)
 			}
-
+			finalHandler = IPFilterMiddleware(finalHandler, &service)
 			mux.Handle(pattern, finalHandler)
 		}
 	}
@@ -40,8 +39,12 @@ func (service *Service) proxyHandler(w http.ResponseWriter, r *http.Request, end
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	originalDirector := proxy.Director
 	proxy.Director = func(r *http.Request) {
-		r.Header.Set("X-User-ID", r.Context().Value("userID").(string))
+		originalDirector(r)
+		if endpoint.AuthStrategy == AuthStrategyJWT {
+			r.Header.Set("X-User-ID", r.Context().Value("userID").(string))
+		}
 	}
 	proxy.ServeHTTP(w, r)
 }

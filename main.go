@@ -19,6 +19,11 @@ type Service struct {
 	Port      int        `json:"port"`
 	Endpoints []Endpoint `json:"endpoints"`
 	SecretKey string     `json:"secret_key"`
+	IPFilter  IPFilter   `json:"ip_filter"`
+}
+type IPFilter struct {
+	Mode string   `json:"mode"`
+	IPs  []string `json:"ips"`
 }
 type Endpoint struct {
 	Path         string       `json:"path"`
