@@ -3,24 +3,45 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	ratelimiter "gate-keeper/internal/rate_limiter"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type Config struct {
 	Services        []Service `json:"services"`
 	AuthTokenSecret string    `json:"auth_token_secret"`
+	RateLimiter     *ratelimiter.RateLimiter
 }
 
 type Service struct {
-	Name      string     `json:"name"`
-	BaseURL   string     `json:"base_url"`
-	Port      int        `json:"port"`
-	Endpoints []Endpoint `json:"endpoints"`
-	SecretKey string     `json:"secret_key"`
-	IPFilter  IPFilter   `json:"ip_filter"`
+	Name        string          `json:"name"`
+	BaseURL     string          `json:"base_url"`
+	Port        int             `json:"port"`
+	Endpoints   []Endpoint      `json:"endpoints"`
+	SecretKey   string          `json:"secret_key"`
+	IPFilter    IPFilter        `json:"ip_filter"`
+	RateLimiter map[string]Rule `json:"rate_limiter"`
 }
+
+type Rule struct {
+	Key   string `json:"key"`
+	Rate  int    `json:"rate"`
+	Burst int    `json:"burst"`
+}
+
+type RateLimitKey string
+
+const (
+	RateLimitKeyGlobal RateLimitKey = "global"
+	RateLimitKeyIP     RateLimitKey = "ip"
+	RateLimitKeyUser   RateLimitKey = "user"
+	RateLimitKeyKey    RateLimitKey = "key"
+)
+
 type IPFilter struct {
 	Mode string   `json:"mode"`
 	IPs  []string `json:"ips"`
@@ -58,6 +79,10 @@ func loadServces(path string) ([]Service, error) {
 }
 
 func main() {
+	redisAddr := "localhost:6379"
+	port := "8080"
+	authTokenSecret := "your-secret-token"
+
 	services, err := loadServces("config.json")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
@@ -65,11 +90,15 @@ func main() {
 
 	cfg := Config{
 		Services: services,
+		RateLimiter: ratelimiter.NewRateLimiter(redis.NewClient(&redis.Options{
+			Addr: redisAddr,
+		})),
+		AuthTokenSecret: authTokenSecret,
 	}
 
 	mux := http.NewServeMux()
 	cfg.registerService(mux)
-	port := "8080"
+
 	s := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,

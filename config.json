@@ -3,6 +3,32 @@
     "name": "external-service-1",
     "base_url": "http://localhost",
     "port": 8081,
+    "ip_filter": {
+      "mode": "whitelist",
+      "ips": ["127.0.0.1"]
+    },
+    "rate_limiter": {
+        "global": {
+          "key": "limit:global",
+          "rate": 1,
+          "burst": 1
+        },
+        "ip": {
+          "key": "limit:ip",
+          "rate": 2,
+          "burst": 100  
+        },
+        "user": {
+          "key": "limit:user",
+          "rate": 1,
+          "burst": 1
+        },
+        "key": {
+          "key": "limit:key",
+          "rate": 1,
+          "burst": 1
+        }
+    },
     "endpoints": [
       {
         "path": "/api/v1/users",

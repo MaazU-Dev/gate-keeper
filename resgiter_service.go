@@ -20,7 +20,7 @@ func (cfg *Config) registerService(mux *http.ServeMux) {
 				service.proxyHandler(w, r, endpoint)
 			})
 
-			var finalHandler http.Handler = baseHandler
+			var finalHandler http.Handler = cfg.RateLimiterMiddleware(baseHandler, &service)
 			if endpoint.AuthStrategy == AuthStrategyJWT {
 				finalHandler = cfg.AuthMiddleware(finalHandler)
 			}
