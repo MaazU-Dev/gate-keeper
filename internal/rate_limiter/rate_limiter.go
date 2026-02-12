@@ -26,12 +26,17 @@ func NewRateLimiter(rdb *redis.Client) *RateLimiter {
 	}
 }
 
-func (rl *RateLimiter) Check(ctx context.Context, key string, rate int, burst int) bool {
+func (rl *RateLimiter) Check(ctx context.Context, key string, rate int, burst int) ([]int64, error) {
 	now := time.Now().Unix()
-	res, err := rl.script.Run(ctx, rl.rdb, []string{key}, rate, burst, now).Int()
+	// two values returned by the script: {allowed, remaining}.
+	values, err := rl.script.Run(ctx, rl.rdb, []string{key}, rate, burst, now).Int64Slice()
 	if err != nil {
-		// Fail-open: if Redis is down, allow the traffic but log it
-		return true
+		// fail-open: if Redis is down, allow the traffic but log it
+		return []int64{1, 0}, nil
 	}
-	return res == 1
+	if len(values) == 0 {
+		// fail-open.
+		return []int64{1, 0}, nil
+	}
+	return values, nil
 }

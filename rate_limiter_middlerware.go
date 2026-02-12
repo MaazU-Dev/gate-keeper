@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -23,14 +24,14 @@ func (cfg *Config) RateLimiterMiddleware(next http.Handler, service *Service) ht
 			burst int
 		}{}
 
-		// Only add rules if they are configured for the service.
+		// only add rules if they are configured for the service.
 		if rl, ok := service.RateLimiter[string(RateLimitKeyGlobal)]; ok && rl.Key != "" {
 			rules = append(rules, struct {
 				key   string
 				rate  int
 				burst int
 			}{
-				rl.Key, rl.Rate, rl.Burst, // Global Safety
+				rl.Key, rl.Rate, rl.Burst, // global Safety
 			})
 		}
 
@@ -40,7 +41,7 @@ func (cfg *Config) RateLimiterMiddleware(next http.Handler, service *Service) ht
 				rate  int
 				burst int
 			}{
-				rl.Key + ":" + ip, rl.Rate, rl.Burst, // Per IP
+				rl.Key + ":" + ip, rl.Rate, rl.Burst, // per IP
 			})
 		}
 
@@ -52,7 +53,7 @@ func (cfg *Config) RateLimiterMiddleware(next http.Handler, service *Service) ht
 					rate  int
 					burst int
 				}{
-					rl.Key + ":" + userID, rl.Rate, rl.Burst, // Per User (Authenticated)
+					rl.Key + ":" + userID, rl.Rate, rl.Burst, // per user (authenticated)
 				})
 			}
 		}
@@ -65,20 +66,31 @@ func (cfg *Config) RateLimiterMiddleware(next http.Handler, service *Service) ht
 					rate  int
 					burst int
 				}{
-					rl.Key + ":" + apiKey, rl.Rate, rl.Burst, // Per API Key
+					rl.Key + ":" + apiKey, rl.Rate, rl.Burst, // per API key
 				})
 			}
 		}
 
 		fmt.Println("Rules", rules)
 
-		// 3. Execute Checks (Most restrictive logic)
+		// execute checks (most restrictive logic)
 		for _, rule := range rules {
 			fmt.Println("Checking rate limit for", rule.key, rule.rate, rule.burst)
-			if !cfg.RateLimiter.Check(ctx, rule.key, rule.rate, rule.burst) {
+			res, err := cfg.RateLimiter.Check(ctx, rule.key, rule.rate, rule.burst)
+			if err != nil {
+				log.Println("Error checking rate limit", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			if res[0] == 0 {
 				w.Header().Set("X-RateLimit-Scope", rule.key)
 				http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 				return
+			}
+			// if allowed == 1, but remaining is 0, means redis has daddy issues, so no head :/
+			if res[1] != 0 {
+				w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", res[1]))
+				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rule.burst))
 			}
 		}
 
