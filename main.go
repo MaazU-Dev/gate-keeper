@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -79,9 +80,19 @@ func loadServces(path string) ([]Service, error) {
 }
 
 func main() {
-	redisAddr := "localhost:6379"
-	port := "8080"
-	authTokenSecret := "your-secret-token"
+	godotenv.Load()
+	redisAddr := os.Getenv("REDDIS_ADDRESS")
+	if redisAddr == "" {
+		log.Fatalf("REDDIS_ADDRESS is not set")
+	}
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		log.Fatalf("SERVER_PORT is not set")
+	}
+	authTokenSecret := os.Getenv("AUTH_TOKEN_SECRET")
+	if authTokenSecret == "" {
+		log.Fatalf("AUTH_TOKEN_SECRET is not set")
+	}
 
 	services, err := loadServces("config.json")
 	if err != nil {
