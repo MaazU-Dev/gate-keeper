@@ -110,6 +110,7 @@ func main() {
 		})),
 		AuthTokenSecret: authTokenSecret,
 	}
+	defer cfg.RateLimiter.Close()
 
 	mux := http.NewServeMux()
 	cfg.registerService(mux)
@@ -120,7 +121,7 @@ func main() {
 	}
 	stop := make(chan os.Signal, 1)
 
-	// SIGINT (Ctrl+C), SIGTERM (Docker/K8s stop)
+	// SIGINT (Interrupt Ctrl+C), SIGTERM (Docker/K8s stop)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	// start the server in a goroutine, so main can wait for the signal and shutdown gracefully
 	go func() {
@@ -128,8 +129,8 @@ func main() {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-	sig := <-stop
-	log.Println("shutting down server...", sig)
+	<-stop
+	log.Println("shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

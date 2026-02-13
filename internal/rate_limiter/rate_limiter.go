@@ -40,3 +40,7 @@ func (rl *RateLimiter) Check(ctx context.Context, key string, rate int, burst in
 	}
 	return values, nil
 }
+
+func (rl *RateLimiter) Close() error {
+	return rl.rdb.Close()
+}
