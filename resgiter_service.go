@@ -25,6 +25,7 @@ func (cfg *Config) registerService(mux *http.ServeMux) {
 				finalHandler = cfg.AuthMiddleware(finalHandler)
 			}
 			finalHandler = IPFilterMiddleware(finalHandler, &service)
+			finalHandler = LoggingMiddleware(finalHandler)
 			mux.Handle(pattern, finalHandler)
 		}
 	}
@@ -45,6 +46,7 @@ func (service *Service) proxyHandler(w http.ResponseWriter, r *http.Request, end
 		if endpoint.AuthStrategy == AuthStrategyJWT {
 			r.Header.Set("X-User-ID", r.Context().Value("userID").(string))
 		}
+		r.Header.Set("X-Request-ID", r.Context().Value(TraceIdKey).(string))
 	}
 	proxy.ServeHTTP(w, r)
 }

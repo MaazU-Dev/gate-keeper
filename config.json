@@ -10,8 +10,8 @@
     "rate_limiter": {
         "global": {
           "key": "limit:global",
-          "rate": 1,
-          "burst": 1
+          "rate": 50,
+          "burst": 50
         },
         "ip": {
           "key": "limit:ip",
