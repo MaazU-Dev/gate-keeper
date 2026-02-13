@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	ratelimiter "gate-keeper/internal/rate_limiter"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -114,7 +118,24 @@ func main() {
 		Addr:    ":" + port,
 		Handler: mux,
 	}
-	if err := s.ListenAndServe(); err != nil {
-		log.Fatalf("server error: %v", err)
+	stop := make(chan os.Signal, 1)
+
+	// SIGINT (Ctrl+C), SIGTERM (Docker/K8s stop)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	// start the server in a goroutine, so main can wait for the signal and shutdown gracefully
+	go func() {
+		if err := s.ListenAndServe(); err != nil {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+	sig := <-stop
+	log.Println("shutting down server...", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatalf("server shutdown error: %v", err)
 	}
+	log.Println("server shutdown complete")
 }
