@@ -6,6 +6,7 @@ import (
 	"fmt"
 	ratelimiter "gate-keeper/internal/rate_limiter"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -115,9 +116,14 @@ func main() {
 	mux := http.NewServeMux()
 	cfg.registerService(mux)
 
+	ongoingCtx, cancelFn := context.WithCancel(context.Background())
 	s := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
+		// This context is shared across all incoming requests, so we can use it to cancel the server when needed
+		BaseContext: func(l net.Listener) context.Context {
+			return ongoingCtx
+		},
 	}
 	stop := make(chan os.Signal, 1)
 
@@ -138,5 +144,6 @@ func main() {
 	if err := s.Shutdown(ctx); err != nil {
 		log.Fatalf("server shutdown error: %v", err)
 	}
+	cancelFn()
 	log.Println("server shutdown complete")
 }
