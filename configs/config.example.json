@@ -1,0 +1,22 @@
+[
+  {
+    "name": "my-service",
+    "base_url": "http://localhost",
+    "port": 8081,
+    "ip_filter": {
+      "mode": "whitelist",
+      "ips": ["127.0.0.1"]
+    },
+    "rate_limiter": {
+      "global": { "key": "limit:global", "rate": 50, "burst": 50 },
+      "ip":     { "key": "limit:ip",     "rate": 10, "burst": 100 },
+      "user":   { "key": "limit:user",   "rate": 5,  "burst": 10 },
+      "key":    { "key": "limit:key",    "rate": 5,  "burst": 10 }
+    },
+    "endpoints": [
+      { "path": "/api/v1/resource", "method": "GET",  "auth_strategy": "jwt" },
+      { "path": "/api/v1/resource", "method": "POST", "auth_strategy": "public" }
+    ],
+    "secret_key": "change-me"
+  }
+]

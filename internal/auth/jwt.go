@@ -17,15 +17,15 @@ func ValidateJWT(tokenString, tokenSecret string) (string, error) {
 		return "", err
 	}
 	if !token.Valid {
-		return "", errors.New("Invalid token")
+		return "", errors.New("invalid token")
 	}
 	tokenClaims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("Invalid token claims")
+		return "", errors.New("invalid token claims")
 	}
 	userID := fmt.Sprintf("%v", tokenClaims["user_id"])
 	if userID == "" {
-		return "", errors.New("User ID is required")
+		return "", errors.New("user ID is required")
 	}
 	return userID, nil
 }
@@ -33,11 +33,11 @@ func ValidateJWT(tokenString, tokenSecret string) (string, error) {
 func GetBearerToken(headers http.Header) (string, error) {
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {
-		return "", errors.New("You are not authenticated")
+		return "", errors.New("you are not authenticated")
 	}
 	authToken := strings.Split(authHeader, " ")
 	if len(authToken) < 2 || authToken[0] != "Bearer" {
-		return "", errors.New("Invalid Bearer token format")
+		return "", errors.New("invalid Bearer token format")
 	}
 	return authToken[1], nil
 }

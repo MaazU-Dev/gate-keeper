@@ -1,8 +1,9 @@
-package main
+package middleware
 
 import (
 	"context"
-	responsewriter "gate-keeper/internal/response_writer"
+	"gate-keeper/internal/config"
+	"gate-keeper/internal/httputil"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,29 +12,25 @@ import (
 	"github.com/google/uuid"
 )
 
-type ctxKey string
-
-const TraceIdKey ctxKey = "trace_Id"
-
 func LoggingMiddleware(next http.Handler) http.Handler {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		traceId := r.Header.Get("X-Request-ID")
-		if traceId == "" {
-			traceId = uuid.New().String()
+		traceID := r.Header.Get("X-Request-ID") //propagates a trace ID (X-Request-ID) through the context and later on, header
+		if traceID == "" {
+			traceID = uuid.New().String()
 		}
-		ctx := context.WithValue(r.Context(), TraceIdKey, traceId)
-		w.Header().Set("X-Request-ID", traceId)
+		ctx := context.WithValue(r.Context(), config.TraceIDKey, traceID)
+		w.Header().Set("X-Request-ID", traceID)
 
-		wrapped := responsewriter.NewResponseWriter(w)
+		wrapped := httputil.NewResponseWriter(w)
 
 		next.ServeHTTP(wrapped, r.WithContext(ctx))
 
 		latency := time.Since(start)
 
 		logger.Info("request_completed",
-			slog.String("trace_id", traceId),
+			slog.String("trace_id", traceID),
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			slog.Int("status", wrapped.StatusCode()),

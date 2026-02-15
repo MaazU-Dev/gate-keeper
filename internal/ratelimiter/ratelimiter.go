@@ -11,7 +11,7 @@ import (
 // This directive tells Go to take the contents of the file
 // and put it into this variable at build time.
 //
-//go:embed rate_limiter.lua
+//go:embed ratelimiter.lua
 var luaScript string
 
 type RateLimiter struct {
@@ -26,9 +26,9 @@ func NewRateLimiter(rdb *redis.Client) *RateLimiter {
 	}
 }
 
+// returns [allowed, remaining].
 func (rl *RateLimiter) Check(ctx context.Context, key string, rate int, burst int) ([]int64, error) {
 	now := time.Now().Unix()
-	// two values returned by the script: {allowed, remaining}.
 	values, err := rl.script.Run(ctx, rl.rdb, []string{key}, rate, burst, now).Int64Slice()
 	if err != nil {
 		// fail-open: if Redis is down, allow the traffic but log it

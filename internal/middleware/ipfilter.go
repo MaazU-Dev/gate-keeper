@@ -1,6 +1,7 @@
-package main
+package middleware
 
 import (
+	"gate-keeper/internal/config"
 	"log"
 	"net"
 	"net/http"
@@ -14,25 +15,19 @@ func ipInList(ip string, list []string) bool {
 	}
 	parsed := net.ParseIP(ip)
 	if parsed != nil && parsed.IsLoopback() {
-		log.Println("invalid ip address")
 		return true
 	}
 	return false
 }
 
-func getClientIP(r *http.Request) string {
+// preferring X-Forwarded-For when behind a reverse proxy or load balancer.
+func GetClientIP(r *http.Request) string {
 	var ip string
 
-	// Prefer the first IP in X-Forwarded-For when present (behind a proxy / load balancer)
-	// When using Cloudfront the client IP address is in the x-original-forwarded-for (need to confirm this)
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		log.Println("request is proxied through a load balancer")
 		parts := strings.Split(xff, ",")
 		ip = strings.TrimSpace(parts[0])
 	} else {
-		log.Println("request is not proxied through a load balancer")
-		// r.RemoteAddr is usually "ip:port" strip the port so config
-		// can just specify the raw IP (e.g. 127.0.0.1 or ::1).
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			ip = r.RemoteAddr
@@ -44,9 +39,10 @@ func getClientIP(r *http.Request) string {
 	return ip
 }
 
-func IPFilterMiddleware(next http.Handler, service *Service) http.Handler {
+// enforces whitelist / blacklist IP filtering for a service.
+func IPFilterMiddleware(next http.Handler, service *config.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := getClientIP(r)
+		ip := GetClientIP(r)
 		inList := ipInList(ip, service.IPFilter.IPs)
 		switch service.IPFilter.Mode {
 		case "whitelist":

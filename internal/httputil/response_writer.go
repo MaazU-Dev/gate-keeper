@@ -1,4 +1,4 @@
-package responsewriter
+package httputil
 
 import "net/http"
 
